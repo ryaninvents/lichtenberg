@@ -1,0 +1,24 @@
+{
+  "name": "lichtenberg",
+  "version": "0.0.1",
+  "description": "A tracing program for your JavaScript apps.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "tracing",
+    "coverage"
+  ],
+  "author": "Ryan Muller <ryan@muller.io>",
+  "license": "ISC",
+  "dependencies": {
+    "baconjs": "~0.7.23",
+    "lodash": "~2.4.1",
+    "esprima": "~1.2.2",
+    "express.io": "~1.1.13",
+    "coffee-script": "~1.8.0",
+    "escodegen": "~1.4.1"
+  }
+}
