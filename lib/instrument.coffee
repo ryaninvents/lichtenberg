@@ -18,7 +18,7 @@ getInstrumentation = (func, opt = {}) ->
         undefined
     type: func.type
     filename: opt.filename
-    shortname: "#{opt.filename}:#{func.loc.start.line}:#{func.loc.start.column}"
+    shortname: "#{opt.filename}:#{func.range[0]}:#{func.range[1]}"
 
   properties.placement = opt?.placement
 
@@ -195,8 +195,11 @@ instrumentTree = (ast, opt=DEFAULT_OPTIONS) ->
       ast.declarations = imap ast.declarations
       ast.instrumentation = _.flatten ast.declarations.map (dec) -> dec.instrumentation
     when 'VariableDeclarator'
-      ins ast.init
-      ast.instrumentation = ast.init.instrumentation
+      if ast.init
+        ins ast.init
+        ast.instrumentation = ast.init.instrumentation
+      else
+        ast.instrumentation = []
     when 'WhileStatement'
       ins ast.test
       ins ast.body

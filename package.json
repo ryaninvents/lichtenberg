@@ -19,6 +19,8 @@
     "esprima": "~1.2.2",
     "express.io": "~1.1.13",
     "coffee-script": "~1.8.0",
-    "escodegen": "~1.4.1"
+    "escodegen": "~1.4.1",
+    "node-uuid": "~1.4.1",
+    "cheerio": "~0.18.0"
   }
 }
