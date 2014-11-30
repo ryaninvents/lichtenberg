@@ -30,7 +30,6 @@ bergs = {}
 
 app.io.route 'ready', (req) ->
   id = req.data.id
-  console.log "#{id} is ready"
   bergs[id] = {}
 
 app.io.route 'done', (req) ->
@@ -44,7 +43,6 @@ app.io.route 'done', (req) ->
       file.totalExpected++
       if range.executed
         file.totalTraced++
-    console.log "#{Math.round file.totalTraced*100/file.totalExpected}%"
   req.io.emit 'results', bergs[id]
 
 app.io.route 'expect', (req) ->

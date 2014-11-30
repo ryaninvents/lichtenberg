@@ -35,6 +35,7 @@ addLichtenberg = (htmlFile, opt) ->
     <script src="/socket.io/socket.io.js"></script>
     <script>var __lichtenberg_id = '#{uuid.v4()}';</script>
     <script src="/lichtenberg/vendor/jquery/dist/jquery.js"></script>
+    <script src="/lichtenberg/vendor/bacon/dist/bacon.js"></script>
     <script src="/lichtenberg/vendor/lodash/dist/lodash.js"></script>
     <script src="/lichtenberg/lichtenberg.js"></script>
     """
