@@ -81,7 +81,7 @@ instrumentTree = (ast, opt=DEFAULT_OPTIONS) ->
       ins ast.right
       ast.instrumentation = ast.left.instrumentation.concat(ast.right.instrumentation)
     when 'BreakStatement'
-      ast.instrumentation = [];
+      ast.instrumentation = []
     when 'CallExpression'
       ins ast.callee
       ast['arguments'] = imap ast['arguments']
@@ -106,7 +106,7 @@ instrumentTree = (ast, opt=DEFAULT_OPTIONS) ->
     when 'EmptyStatement'
       ast.instrumentation = []
     when 'ExpressionStatement'
-      if opt.statementCoverage
+      if opt.statementCoverage or true
         ast = instrumentStatement(ast, opt)
         # instrumentation has already been attached after the above call
       else
@@ -127,10 +127,9 @@ instrumentTree = (ast, opt=DEFAULT_OPTIONS) ->
     when 'FunctionDeclaration', 'FunctionExpression'
       ins ast.body
       #ast.body.body = imap ast.body.body
-      if opt.functionCoverage
-        inst = getInstrumentation ast, opt
-        ast.body.body.unshift inst
-        ast.instrumentation = _.flatten [[inst], ast.body.instrumentation]
+      inst = getInstrumentation ast, opt
+      #ast.body.body.unshift inst
+      ast.instrumentation = [inst].concat ast.body.instrumentation
     when 'Identifier'
       ast.instrumentation = []
     when 'IfStatement'
