@@ -1,0 +1,47 @@
+#lichtenberg {
+  font: 20px/1.5 "Helvetica Neue",Helvetica,Arial,sans-serif;
+  margin: 60px 50px;
+}
+#lichtenberg h1 {
+  font-size: 1em;
+  font-weight: 200;
+}
+#lichtenberg table{
+  width: 100%;
+}
+#lichtenberg td.coverage {
+  position: relative;
+  background-color: #dcdcdc;
+  min-width: 60px;
+  font-size: 80%;
+}
+#lichtenberg td.coverage .covbar {
+  width: attr(data-covered);
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  height:100%;
+  content: "";
+  z-index: 1;
+}
+
+#lichtenberg td.coverage .covbar.acceptable {
+  background-color: #00d6b2;
+}
+
+#lichtenberg td.coverage .covbar.iffy {
+  background-color: #D2D65A;
+}
+
+#lichtenberg td.coverage .covbar.unacceptable {
+  background-color: #de7373;
+}
+
+#lichtenberg .cov-text {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  padding: 2px;
+}

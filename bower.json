@@ -21,5 +21,12 @@
     "bower_components",
     "test",
     "tests"
-  ]
+  ],
+  "homepage": "https://github.com/baconscript/lichtenberg",
+  "dependencies": {
+    "mocha": "~2.0.1",
+    "chai": "~1.10.0",
+    "lodash": "~2.4.1",
+    "jquery": "~2.1.1"
+  }
 }

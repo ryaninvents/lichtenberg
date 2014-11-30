@@ -96,15 +96,15 @@ instrumentTree = (ast, opt=DEFAULT_OPTIONS) ->
       ins ast.alternate
       ast.instrumentation = _.flatten ['test','consequent','alternate'].map (name) -> ast[name].instrumentation
     when 'ContinueStatement'
-      ast.instrumentation = [];
+      ast.instrumentation = []
     when 'DoWhileStatement'
       ins ast.body
       ins ast.test
       ast.instrumentation = ast.body.instrumentation.concat ast.test.instrumentation
     when 'DebuggerStatement'
-      ast.instrumentation = [];
+      ast.instrumentation = []
     when 'EmptyStatement'
-      ast.instrumentation = [];
+      ast.instrumentation = []
     when 'ExpressionStatement'
       if opt.statementCoverage
         ast = instrumentStatement(ast, opt)
@@ -117,7 +117,8 @@ instrumentTree = (ast, opt=DEFAULT_OPTIONS) ->
       ins ast.test
       ins ast.update
       ins ast.body
-      ast.instrumentation = _.flatten ['init','test','update','body'].map (name) -> ast[name].instrumentation
+      ast.instrumentation = _.flatten ['init','test','update','body'].filter((name) -> ast[name]).map (name) ->
+        ast[name].instrumentation
     when 'ForInStatement'
       ins ast.left
       ins ast.right

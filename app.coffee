@@ -11,6 +11,8 @@ else
   console.error 'No lichtenberg.json found in the current directory.'
   process.exit -1
 
+config.serveAs ?= '/'
+
 if config.exclude?
   config.exclude = config.exclude.map (x)-> new RegExp x
 
@@ -33,8 +35,6 @@ app.io.route 'ready', (req) ->
 
 app.io.route 'done', (req) ->
   id = req.data.id
-  process.stdout.write('v');
-  console.log "verifying #{id}"
   totalExpected = 0
   totalTraced = 0
   _.values(bergs[id]).forEach (file) ->
@@ -46,8 +46,6 @@ app.io.route 'done', (req) ->
         file.totalTraced++
     console.log "#{Math.round file.totalTraced*100/file.totalExpected}%"
   req.io.emit 'results', bergs[id]
-
-setTimeout (-> console.log JSON.stringify bergs,null,2), 20000
 
 app.io.route 'expect', (req) ->
   id = req.data.id
@@ -85,10 +83,10 @@ app.io.route 'instrument', (req) ->
 
 
 # If we go to the root, redirect to the test page.
-app.get '/', (req, res) -> res.redirect path.join config.serveAs, '/'
+app.get '/', (req, res) -> res.redirect path.join config.serveAs, config.entry
 
 # Serve the main test page.
-app.get config.serveAs, (req, res) ->
+app.get path.join(config.serveAs,config.entry), (req, res) ->
   addLichtenberg config.entry, callback: (err, html)->
     if err then return res.status(500).send err.toString()
     res.send html
@@ -121,7 +119,7 @@ app.get /\/.*/, (req, res) ->
   if fs.existsSync(fnm)
     res.sendfile fnm
   else
-    fnm = __dirname + req.path.replace /^\/vendor/, "/bower_components"
+    fnm = path.join __dirname , req.path.replace /^\/lichtenberg\/vendor/, "/bower_components"
     if fs.existsSync fnm
       res.sendfile fnm
     else
