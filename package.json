@@ -1,6 +1,6 @@
 {
   "name": "lichtenberg",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "A tracing program for your JavaScript apps.",
   "repository": "https://github.com/baconscript/lichtenberg.git",
   "main": "index.js",
@@ -11,7 +11,7 @@
   "scripts": {
     "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "postinstall": "node_modules/.bin/grunt"
+    "prepublish": "node_modules/.bin/grunt"
   },
   "keywords": [
     "tracing",
