@@ -44,9 +44,9 @@ app.io.route 'done', (req) ->
       if range.executed
         file.totalTraced++
   req.io.emit 'results', bergs[id]
-  console.log bergs[id]
 
 app.io.route 'expect', (req) ->
+  return unless req.data.range
   id = req.data.id
   fnm = req.data.filename
   range = "#{req.data.range[0]}:#{req.data.range[1]}"

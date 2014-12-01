@@ -27,6 +27,11 @@
             result = format('My favorite color is %X', color);
         assert.equal(result, 'My favorite color is 0xA314F3');
       });
+      it('should interpolate characters from charcodes', function(){
+        var chr = '!'.charCodeAt(0),
+            result = format('Hello world%c', chr);
+        assert.equal(result, 'Hello world!');
+      });
       after(function(){
         if(__Lichtenberg){
           __Lichtenberg.done();

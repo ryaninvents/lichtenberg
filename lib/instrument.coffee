@@ -91,7 +91,6 @@ instrumentTree = (ast, opt=DEFAULT_OPTIONS) ->
       ins ast.callee
       ast['arguments'] = imap ast['arguments']
       ast.instrumentation = ast.callee.instrumentation.concat _.flatten ast['arguments'].map (el) -> el.instrumentation
-      console.log 'CallExpression', ast.instrumentation.filter _.identity
     when 'CatchClause'
       ins ast.body
       ast.instrumentation = ast.body.instrumentation
@@ -167,10 +166,7 @@ instrumentTree = (ast, opt=DEFAULT_OPTIONS) ->
     when 'Program'
       imap ast.body
       ast.body.filter((line)->line and line.expression).forEach (line) -> line.instrumentation = line.expression.instrumentation
-      #console.log 'prog ast.body', JSON.stringify ast.body,null,2
-      console.log 'prg body[1].expression', ast.body[1].expression
       ast.instrumentation = _.flatten ast.body.filter((line)->line.instrumentation).map (line) -> line.instrumentation
-      console.log 'Program', ast
     when 'Property'
       ast.value = ins ast.value
       ast.instrumentation = ast.value.instrumentation
@@ -188,11 +184,12 @@ instrumentTree = (ast, opt=DEFAULT_OPTIONS) ->
       ast.cases = imap ast.cases
       ast.instrumentation = _.flatten ast.cases.map (ca) -> ca.instrumentation
     when 'SwitchCase'
-      ins ast.consequent
-      ast.instrumentation = _.clone ast.consequent.instrumentation
+      ast.consequent = imap ast.consequent
+      ast.instrumentation = imap ast.consequent
       if ast.test
         ins ast.test
-        ast.instrumentation = _.flatten ast.instrumentation, ast.test.instrumentation
+        ast.instrumentation = ast.instrumentation.concat ast.test.instrumentation
+      #console.log 'SwitchCase', JSON.stringify ast.instrumentation, null, 2
     when 'ThisExpression'
       ast.instrumentation = []
     when 'TryStatement'
@@ -222,7 +219,7 @@ instrumentTree = (ast, opt=DEFAULT_OPTIONS) ->
 
 createExpectStatements = (ast) ->
   inst = ast.instrumentation.filter(_.identity).map((x)->x._props).filter(_.identity)
-  inst.map (ins) ->
+  inst.filter((ins) -> ins.range).map (ins) ->
     getInstrumentation null,
       properties: ins
       func: "expect"
