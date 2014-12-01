@@ -18,7 +18,7 @@ getInstrumentation = (func, opt = {}) ->
         undefined
     type: func.type
     filename: opt.filename
-    shortname: "#{opt.filename}:#{func.range[0]}:#{func.range[1]}"
+    #shortname: "#{opt.filename}:#{func.range[0]}:#{func.range[1]}"
 
   properties.placement = opt?.placement
 
@@ -49,18 +49,23 @@ getInstrumentation = (func, opt = {}) ->
     _props: properties
   }
 
+# Instrument an ExpressionStatement.
 instrumentStatement = (ast, opt={}) ->
+  instrumentTree(ast.expression, opt)
   after = no#ast.type isnt "ReturnStatement"
   instrumentation1 = getInstrumentation(ast, _.defaults(_.clone(opt),{name:no,placement:'before'}))
   if after
     instrumentation2 = getInstrumentation(ast, _.defaults(_.clone(opt),{name:no,placement:'after'}))
-  instrumentTree(ast.expression, opt)
   if after
     ast.instrumentation = [instrumentation1, instrumentation2]
-    [instrumentation1, ast, instrumentation2]
+    out = [instrumentation1, ast, instrumentation2]
+    out.instrumentation = ast.instrumentation
+    out
   else
     ast.instrumentation = [instrumentation1]
-    [instrumentation1, ast]
+    out = [instrumentation1, ast]
+    out.instrumentation = ast.instrumentation
+    out
 
 instrumentTree = (ast, opt=DEFAULT_OPTIONS) ->
   return ast unless ast
@@ -86,6 +91,7 @@ instrumentTree = (ast, opt=DEFAULT_OPTIONS) ->
       ins ast.callee
       ast['arguments'] = imap ast['arguments']
       ast.instrumentation = ast.callee.instrumentation.concat _.flatten ast['arguments'].map (el) -> el.instrumentation
+      console.log 'CallExpression', ast.instrumentation.filter _.identity
     when 'CatchClause'
       ins ast.body
       ast.instrumentation = ast.body.instrumentation
@@ -159,8 +165,11 @@ instrumentTree = (ast, opt=DEFAULT_OPTIONS) ->
       ast.properties = imap ast.properties
       ast.instrumentation = _.flatten ast.properties.map (prop) -> prop.instrumentation
     when 'Program'
-      ast.body = imap ast.body
-      ast.instrumentation = _.flatten ast.body.map (line) -> line.instrumentation
+      imap ast.body
+      console.log 'prog ast.body', ast.body.map (l)->l.instrumentation
+      console.log 'prg body[1].instur', ast.body[1].instrumentation
+      ast.instrumentation = _.flatten ast.body.filter((line)->line.instrumentation).map (line) -> line.instrumentation
+      console.log 'Program', ast.instrumentation.filter _.identity
     when 'Property'
       ast.value = ins ast.value
       ast.instrumentation = ast.value.instrumentation
@@ -211,7 +220,7 @@ instrumentTree = (ast, opt=DEFAULT_OPTIONS) ->
   ast
 
 createExpectStatements = (ast) ->
-  inst = ast.instrumentation.filter(_.identity).map((x)->x._props)
+  inst = ast.instrumentation.filter(_.identity).map((x)->x._props).filter(_.identity)
   inst.map (ins) ->
     getInstrumentation null,
       properties: ins
@@ -230,7 +239,7 @@ instrument = (code, opt=DEFAULT_OPTIONS) ->
     escodegen.generate ast
   catch e
     ast.error = e.toString()
-    console.error(e);
+    console.error(e)
     JSON.stringify ast, null, 2
     throw e
 

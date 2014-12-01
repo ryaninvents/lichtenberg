@@ -39,11 +39,12 @@ app.io.route 'done', (req) ->
   _.values(bergs[id]).forEach (file) ->
     file.totalExpected = 0
     file.totalTraced = 0
-    _.values(file).forEach (range) ->
+    _.values(file.lines).forEach (range) ->
       file.totalExpected++
       if range.executed
         file.totalTraced++
   req.io.emit 'results', bergs[id]
+  console.log bergs[id]
 
 app.io.route 'expect', (req) ->
   id = req.data.id
@@ -52,10 +53,10 @@ app.io.route 'expect', (req) ->
   unless bergs[id]
     bergs[id] = {}
   unless bergs[id][fnm]
-    bergs[id][fnm] = {}
-  unless bergs[id][fnm][range]
-    bergs[id][fnm][range] = {}
-  row = bergs[id][fnm][range]
+    bergs[id][fnm] = {lines:{}}
+  unless bergs[id][fnm].lines[range]
+    bergs[id][fnm].lines[range] = {}
+  row = bergs[id][fnm].lines[range]
   row.type = req.data.type
   row.executed = no
 
@@ -68,10 +69,10 @@ app.io.route 'trace', (req) ->
   unless bergs[id]
     bergs[id] = {}
   unless bergs[id][fnm]
-    bergs[id][fnm] = {}
-  unless bergs[id][fnm][range]
-    bergs[id][fnm][range] = {}
-  row = bergs[id][fnm][range]
+    bergs[id][fnm] = {lines:{}}
+  unless bergs[id][fnm].lines[range]
+    bergs[id][fnm].lines[range] = {}
+  row = bergs[id][fnm].lines[range]
   row.executed = yes
 
 app.io.route 'instrument', (req) ->
