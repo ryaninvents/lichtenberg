@@ -1,0 +1,48 @@
+<html>
+<head>
+  <title> Sample test suite </title>
+  <link rel="stylesheet" href="assets/bower_components/mocha/mocha.css">
+</head>
+<body>
+  <div id="mocha"></div>
+  <div id="lichtenberg"></div>
+  <script src="/assets/bower_components/mocha/mocha.js"></script>
+  <script src="/assets/bower_components/chai/chai.js"></script>
+  <script src="/assets/format.js"></script>
+  <script>
+    mocha.setup('bdd');
+    var assert = chai.assert;
+    describe('format.js', function(){
+      it('should interpolate strings correctly', function(){
+        var result = format('%s world', 'hello');
+        assert.equal(result, 'hello world');
+      });
+      it('should interpolate decimal numbers correctly', function(){
+        var what = 'life, the universe, and everything',
+            result = format('%d is the answer to %s', 42, what);
+        assert.equal(result, '42 is the answer to life, the universe, and everything');
+      });
+      it('should interpolate hex numbers correctly', function(){
+        var color = 0xA314F3,
+            result = format('My favorite color is %X', color);
+        assert.equal(result, 'My favorite color is 0xA314F3');
+      });
+      it('should interpolate characters from charcodes', function(){
+        var chr = '!'.charCodeAt(0),
+            result = format('Hello world%c', chr);
+        assert.equal(result, 'Hello world!');
+      });
+      after(function(){
+        if(__Lichtenberg){
+          __Lichtenberg.done();
+        }
+      });
+    });
+    if(window.mochaPhantomJS){
+      mochaPhantomJS.run();
+    }else{
+      mocha.run();
+    }
+  </script>
+</body>
+</html>

@@ -18,7 +18,7 @@ getInstrumentation = (func, opt = {}) ->
         undefined
     type: func.type
     filename: opt.filename
-    shortname: "#{opt.filename}:#{func.loc.start.line}:#{func.loc.start.column}"
+    #shortname: "#{opt.filename}:#{func.range[0]}:#{func.range[1]}"
 
   properties.placement = opt?.placement
 
@@ -49,18 +49,23 @@ getInstrumentation = (func, opt = {}) ->
     _props: properties
   }
 
+# Instrument an ExpressionStatement.
 instrumentStatement = (ast, opt={}) ->
+  instrumentTree(ast.expression, opt)
   after = no#ast.type isnt "ReturnStatement"
   instrumentation1 = getInstrumentation(ast, _.defaults(_.clone(opt),{name:no,placement:'before'}))
   if after
     instrumentation2 = getInstrumentation(ast, _.defaults(_.clone(opt),{name:no,placement:'after'}))
-  instrumentTree(ast.expression, opt)
   if after
     ast.instrumentation = [instrumentation1, instrumentation2]
-    [instrumentation1, ast, instrumentation2]
+    out = [instrumentation1, ast, instrumentation2]
+    out.instrumentation = ast.instrumentation
+    out
   else
     ast.instrumentation = [instrumentation1]
-    [instrumentation1, ast]
+    out = [instrumentation1, ast]
+    out.instrumentation = ast.instrumentation
+    out
 
 instrumentTree = (ast, opt=DEFAULT_OPTIONS) ->
   return ast unless ast
@@ -81,7 +86,7 @@ instrumentTree = (ast, opt=DEFAULT_OPTIONS) ->
       ins ast.right
       ast.instrumentation = ast.left.instrumentation.concat(ast.right.instrumentation)
     when 'BreakStatement'
-      ast.instrumentation = [];
+      ast.instrumentation = []
     when 'CallExpression'
       ins ast.callee
       ast['arguments'] = imap ast['arguments']
@@ -96,17 +101,17 @@ instrumentTree = (ast, opt=DEFAULT_OPTIONS) ->
       ins ast.alternate
       ast.instrumentation = _.flatten ['test','consequent','alternate'].map (name) -> ast[name].instrumentation
     when 'ContinueStatement'
-      ast.instrumentation = [];
+      ast.instrumentation = []
     when 'DoWhileStatement'
       ins ast.body
       ins ast.test
       ast.instrumentation = ast.body.instrumentation.concat ast.test.instrumentation
     when 'DebuggerStatement'
-      ast.instrumentation = [];
+      ast.instrumentation = []
     when 'EmptyStatement'
-      ast.instrumentation = [];
+      ast.instrumentation = []
     when 'ExpressionStatement'
-      if opt.statementCoverage
+      if opt.statementCoverage or true
         ast = instrumentStatement(ast, opt)
         # instrumentation has already been attached after the above call
       else
@@ -117,7 +122,8 @@ instrumentTree = (ast, opt=DEFAULT_OPTIONS) ->
       ins ast.test
       ins ast.update
       ins ast.body
-      ast.instrumentation = _.flatten ['init','test','update','body'].map (name) -> ast[name].instrumentation
+      ast.instrumentation = _.flatten ['init','test','update','body'].filter((name) -> ast[name]).map (name) ->
+        ast[name].instrumentation
     when 'ForInStatement'
       ins ast.left
       ins ast.right
@@ -126,10 +132,9 @@ instrumentTree = (ast, opt=DEFAULT_OPTIONS) ->
     when 'FunctionDeclaration', 'FunctionExpression'
       ins ast.body
       #ast.body.body = imap ast.body.body
-      if opt.functionCoverage
-        inst = getInstrumentation ast, opt
-        ast.body.body.unshift inst
-        ast.instrumentation = _.flatten [[inst], ast.body.instrumentation]
+      inst = getInstrumentation ast, opt
+      #ast.body.body.unshift inst
+      ast.instrumentation = [inst].concat ast.body.instrumentation
     when 'Identifier'
       ast.instrumentation = []
     when 'IfStatement'
@@ -159,8 +164,9 @@ instrumentTree = (ast, opt=DEFAULT_OPTIONS) ->
       ast.properties = imap ast.properties
       ast.instrumentation = _.flatten ast.properties.map (prop) -> prop.instrumentation
     when 'Program'
-      ast.body = imap ast.body
-      ast.instrumentation = _.flatten ast.body.map (line) -> line.instrumentation
+      imap ast.body
+      ast.body.filter((line)->line and line.expression).forEach (line) -> line.instrumentation = line.expression.instrumentation
+      ast.instrumentation = _.flatten ast.body.filter((line)->line.instrumentation).map (line) -> line.instrumentation
     when 'Property'
       ast.value = ins ast.value
       ast.instrumentation = ast.value.instrumentation
@@ -178,11 +184,12 @@ instrumentTree = (ast, opt=DEFAULT_OPTIONS) ->
       ast.cases = imap ast.cases
       ast.instrumentation = _.flatten ast.cases.map (ca) -> ca.instrumentation
     when 'SwitchCase'
-      ins ast.consequent
-      ast.instrumentation = _.clone ast.consequent.instrumentation
+      ast.consequent = imap ast.consequent
+      ast.instrumentation = imap ast.consequent
       if ast.test
         ins ast.test
-        ast.instrumentation = _.flatten ast.instrumentation, ast.test.instrumentation
+        ast.instrumentation = ast.instrumentation.concat ast.test.instrumentation
+      #console.log 'SwitchCase', JSON.stringify ast.instrumentation, null, 2
     when 'ThisExpression'
       ast.instrumentation = []
     when 'TryStatement'
@@ -195,8 +202,11 @@ instrumentTree = (ast, opt=DEFAULT_OPTIONS) ->
       ast.declarations = imap ast.declarations
       ast.instrumentation = _.flatten ast.declarations.map (dec) -> dec.instrumentation
     when 'VariableDeclarator'
-      ins ast.init
-      ast.instrumentation = ast.init.instrumentation
+      if ast.init
+        ins ast.init
+        ast.instrumentation = ast.init.instrumentation
+      else
+        ast.instrumentation = []
     when 'WhileStatement'
       ins ast.test
       ins ast.body
@@ -208,8 +218,8 @@ instrumentTree = (ast, opt=DEFAULT_OPTIONS) ->
   ast
 
 createExpectStatements = (ast) ->
-  inst = ast.instrumentation.filter(_.identity).map((x)->x._props)
-  inst.map (ins) ->
+  inst = ast.instrumentation.filter(_.identity).map((x)->x._props).filter(_.identity)
+  inst.filter((ins) -> ins.range).map (ins) ->
     getInstrumentation null,
       properties: ins
       func: "expect"
@@ -227,7 +237,7 @@ instrument = (code, opt=DEFAULT_OPTIONS) ->
     escodegen.generate ast
   catch e
     ast.error = e.toString()
-    console.error(e);
+    console.error(e)
     JSON.stringify ast, null, 2
     throw e
 
