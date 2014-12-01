@@ -166,10 +166,11 @@ instrumentTree = (ast, opt=DEFAULT_OPTIONS) ->
       ast.instrumentation = _.flatten ast.properties.map (prop) -> prop.instrumentation
     when 'Program'
       imap ast.body
-      console.log 'prog ast.body', ast.body.map (l)->l.instrumentation
-      console.log 'prg body[1].instur', ast.body[1].instrumentation
+      ast.body.filter((line)->line and line.expression).forEach (line) -> line.instrumentation = line.expression.instrumentation
+      #console.log 'prog ast.body', JSON.stringify ast.body,null,2
+      console.log 'prg body[1].expression', ast.body[1].expression
       ast.instrumentation = _.flatten ast.body.filter((line)->line.instrumentation).map (line) -> line.instrumentation
-      console.log 'Program', ast.instrumentation.filter _.identity
+      console.log 'Program', ast
     when 'Property'
       ast.value = ins ast.value
       ast.instrumentation = ast.value.instrumentation
