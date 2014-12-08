@@ -1,6 +1,6 @@
 {
   "name": "lichtenberg",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "A tracing program for your JavaScript apps.",
   "repository": "https://github.com/baconscript/lichtenberg.git",
   "main": "index.js",
