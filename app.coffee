@@ -46,7 +46,7 @@ app.io.route 'done', (req) ->
   req.io.emit 'results', bergs[id]
 
 app.io.route 'expect', (req) ->
-  return unless req.data.range
+  return unless req.data?.range?
   id = req.data.id
   fnm = req.data.filename
   range = "#{req.data.range[0]}:#{req.data.range[1]}"
@@ -63,6 +63,7 @@ app.io.route 'expect', (req) ->
 app.io.route 'trace', (req) ->
   # TODO need to test if req.data is an array!
   # if it's an array we can buffer it.
+  return unless req.data?.range?
   id = req.data.id
   fnm = req.data.filename
   range = "#{req.data.range[0]}:#{req.data.range[1]}"
