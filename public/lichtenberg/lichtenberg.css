@@ -27,15 +27,15 @@
 }
 
 #lichtenberg td.coverage .covbar.acceptable {
-  background-color: #00d6b2;
+  background-color: hsl(147, 62%, 61%);
 }
 
 #lichtenberg td.coverage .covbar.iffy {
-  background-color: #D2D65A;
+  background-color: hsl(60, 77%, 69%);
 }
 
 #lichtenberg td.coverage .covbar.unacceptable {
-  background-color: #de7373;
+  background-color: hsl(0, 77%, 69%);
 }
 
 #lichtenberg .cov-text {
