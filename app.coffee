@@ -36,7 +36,7 @@ app.io.route 'done', (req) ->
   id = req.data.id
   totalExpected = 0
   totalTraced = 0
-  _.values(bergs[id]).forEach (file) ->
+  _.values(bergs[id].files).forEach (file) ->
     file.totalExpected = 0
     file.totalTraced = 0
     _.values(file.lines).forEach (range) ->
@@ -50,15 +50,15 @@ app.io.route 'expect', (req) ->
   id = req.data.id
   fnm = req.data.filename
   range = "#{req.data.range[0]}:#{req.data.range[1]}"
-  unless bergs[id]
-    bergs[id] = {}
-  unless bergs[id][fnm]
-    bergs[id][fnm] = {lines:{}}
-  unless bergs[id][fnm].lines[range]
-    bergs[id][fnm].lines[range] = {}
-  row = bergs[id][fnm].lines[range]
+  unless bergs[id]?.files?
+    bergs[id] = {files:{}}
+  unless bergs[id].files[fnm]?
+    bergs[id].files[fnm] = {lines:{}}
+  unless bergs[id].files[fnm].lines[range]?
+    bergs[id].files[fnm].lines[range] = req.data
+  row = bergs[id].files[fnm].lines[range]
   row.type = req.data.type
-  row.executed = no
+  row.executed = 0
 
 app.io.route 'trace', (req) ->
   # TODO need to test if req.data is an array!
@@ -67,20 +67,19 @@ app.io.route 'trace', (req) ->
   id = req.data.id
   fnm = req.data.filename
   range = "#{req.data.range[0]}:#{req.data.range[1]}"
-  unless bergs[id]
-    bergs[id] = {}
-  unless bergs[id][fnm]
-    bergs[id][fnm] = {lines:{}}
-  unless bergs[id][fnm].lines[range]
-    bergs[id][fnm].lines[range] = {}
-  row = bergs[id][fnm].lines[range]
-  row.executed = yes
+  unless bergs[id]?.files?
+    bergs[id] = {files:[]}
+  unless bergs[id].files[fnm]?
+    bergs[id].files[fnm] = {lines:{}}
+  unless bergs[id].files[fnm].lines[range]?
+    row = bergs[id].files[fnm].lines[range] = req.data
+    row.executed = 0
+  row = bergs[id].files[fnm].lines[range]
+  row.executed++
 
 app.io.route 'instrument', (req) ->
   code = req.data.code
   req.io.emit 'instrument', code: instrument(code, req.data)
-
-
 
 # If we go to the root, redirect to the test page.
 app.get '/', (req, res) -> res.redirect path.join config.serveAs, config.entry
@@ -93,16 +92,28 @@ app.get path.join(config.serveAs,config.entry), (req, res) ->
 
 # Serve any JS files that the tests depend on, instrumenting as needed.
 app.get new RegExp(path.join config.serveAs, '.*\.js$'), (req, res, next) ->
-  fnm = req.path.replace config.serveAs, ''
-  fnm = path.join process.cwd(), fnm
+  fnm1 = req.path.replace config.serveAs, ''
+  fnm = path.join process.cwd(), fnm1
   if config.exclude? and _.any(config.exclude, (x) -> fnm.match x)
     return next()
   if fs.existsSync fnm
     fs.readFile fnm, (err, code) ->
       if err then return res.status(500).send err.toString()
-      res.send instrument(code, filename:req.path)
+      res.send instrument(code, filename:fnm1)
   else
     next()
+
+app.get new RegExp(path.join '/lichtenberg/original', '.*\.js$'), (req, res) ->
+  fnm1 = req.path.replace '/lichtenberg/original', ''
+  fnm = path.join process.cwd(), fnm1
+  if fs.existsSync fnm
+    fs.readFile fnm, (err, code) ->
+      if err
+        res.status(500).end err.toString()
+      else
+        res.send code
+  else
+    res.status(404).end('File not found')
 
 # Serve the files that the tests depend on.
 app.get new RegExp(path.join config.serveAs, '.*'), (req, res, next) ->

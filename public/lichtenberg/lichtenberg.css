@@ -1,3 +1,5 @@
+@import url('/lichtenberg/vendor/fontawesome/css/font-awesome.css');
+
 #lichtenberg {
   font: 20px/1.5 "Helvetica Neue",Helvetica,Arial,sans-serif;
   margin: 60px 50px;
@@ -26,6 +28,20 @@
   z-index: 1;
 }
 
+#lichtenberg tr[data-content="filename"]{
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+#lichtenberg tr[data-content="filename"]:hover{
+  background-color: aliceblue;
+}
+
+#lichtenberg td[colspan] {
+  padding-left: 12px;
+  border-left: 4px solid hsl(0, 0%, 86%);
+}
+
 #lichtenberg td.coverage .covbar.acceptable {
   background-color: hsl(147, 62%, 61%);
 }
@@ -44,4 +60,40 @@
   left: 0;
   z-index: 10;
   padding: 2px;
+}
+
+#lichtenberg code.coverage {
+  font-face: monospace;
+  border: 1px solid #dcdcdc;
+  border-radius: 3px;
+  display: block;
+  margin: 4px;
+  padding: 2px 3px;
+  margin-left: 8px;
+}
+
+#lichtenberg code.coverage:hover {
+  background-color: hsla(208, 100%, 42%, 0.1);
+}
+
+#lichtenberg code.coverage:hover, #lichtenberg code.coverage:hover code {
+  border-top: 1px solid hsl(0, 0%, 60%);
+  border-bottom: 1px solid hsl(0, 0%, 60%);
+  border-right: 1px solid hsl(0, 0%, 60%);
+}
+
+#lichtenberg code.coverage.passed {
+  border-left: 3px solid hsl(147, 62%, 61%);
+}
+
+#lichtenberg code.coverage.failed {
+  border-left: 3px solid hsl(0, 77%, 69%);
+}
+
+#lichtenberg tr.collapsed {
+  display: none;
+}
+
+#lichtenberg code pre {
+  margin: -1px;
 }

@@ -10,24 +10,36 @@ addLichtenberg = (htmlFile, opt) ->
   fs.readFile htmlFile, (err, source) ->
     if err then return callback err
     $ = cheerio.load source
+    # TODO this is idiotic and has got to (mostly) go
+    # the whole #lichtenberg-results-tpl ought to be loaded async'ly
     $('body').prepend """
     <script type="text/x-template" id="lichtenberg-waiting">
-    <h3>Running tests, please be patient...</h3>
+    <h3><i class="fa fa-spinner fa-spin"></i> Running tests, please be patient...</h3>
     </script>
     <script type="text/x-template" id="lichtenberg-results-tpl">
     <h1>Code coverage</h1>
     <table>
-      <% _.forEach(results, function(result){ 
+      <% _.forEach(results, function(result){
       var amt = result.totalTraced/result.totalExpected,
           amtPct = Math.round(amt*100),
           barClass = amt < .60? "unacceptable" : amt < .80 ? "iffy" : "acceptable";
       %>
-      <tr>
-      <td><%- result.filename %></td>
+      <tr data-file="<%- result.filename %>" data-content="filename">
+      <td>
+        <i class="fa fa-caret-right"></i>
+        <%- result.filename %>
+        <div style="display:none;" type="text/x-coverage-results">
+        <%- JSON.stringify(result) %>
+        </div>
+      </td>
       <td class="coverage">
         <div class="covbar <%- barClass %>" style="width:<%- amtPct %>%"></div>
         <span class="cov-text"><%- result.totalTraced %>/<%- result.totalExpected %>
       (<%- amtPct %>%)</span></td>
+      </tr>
+      <tr data-file="<%- result.filename %>" data-content="code" class="collapsed">
+        <td colspan=2>
+        </td>
       </tr>
       <% }); %>
     </table>
