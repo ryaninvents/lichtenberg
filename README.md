@@ -1,5 +1,7 @@
 # Lichtenberg
 
+[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/baconscript/lichtenberg?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 [![Lichtenberg figure, made by high-voltage electrical discharge through a block of acrylic](https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/PlanePair2.jpg/264px-PlanePair2.jpg)](https://en.wikipedia.org/wiki/Lichtenberg_figure)
 
 A JavaScript code coverage and debugging library. Still in alpha.
