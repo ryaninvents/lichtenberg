@@ -30,10 +30,12 @@ bergs = {}
 
 app.io.route 'ready', (req) ->
   id = req.data.id
+  console.log "Received ready from #{id}"
   bergs[id] = {}
 
 app.io.route 'done', (req) ->
   id = req.data.id
+  console.log "Received done from #{id}"
   totalExpected = 0
   totalTraced = 0
   _.values(bergs[id].files).forEach (file) ->
@@ -43,9 +45,12 @@ app.io.route 'done', (req) ->
       file.totalExpected++
       if range.executed
         file.totalTraced++
+  console.log "Sending results to #{id}"
   req.io.emit 'results', bergs[id]
 
-app.io.route 'expect', (req) ->
+
+expectItem = (data) ->
+  req = data:data
   return unless req.data?.range?
   id = req.data.id
   fnm = req.data.filename
@@ -60,9 +65,11 @@ app.io.route 'expect', (req) ->
   row.type = req.data.type
   row.executed = 0
 
-app.io.route 'trace', (req) ->
-  # TODO need to test if req.data is an array!
-  # if it's an array we can buffer it.
+app.io.route 'expect', (req) ->
+  req.data.forEach expectItem
+
+traceItem = (data) ->
+  req = data:data
   return unless req.data?.range?
   id = req.data.id
   fnm = req.data.filename
@@ -76,6 +83,9 @@ app.io.route 'trace', (req) ->
     row.executed = 0
   row = bergs[id].files[fnm].lines[range]
   row.executed++
+
+app.io.route 'trace', (req) ->
+  req.data.forEach traceItem
 
 app.io.route 'instrument', (req) ->
   code = req.data.code
@@ -99,7 +109,8 @@ app.get new RegExp(path.join config.serveAs, '.*\.js$'), (req, res, next) ->
   if fs.existsSync fnm
     fs.readFile fnm, (err, code) ->
       if err then return res.status(500).send err.toString()
-      res.send instrument(code, filename:fnm1)
+      res.set('Content-Type':'application/x-javascript','Cache-Control':'no-cache')
+      .send instrument(code, filename:fnm1)
   else
     next()
 
@@ -111,7 +122,8 @@ app.get new RegExp(path.join '/lichtenberg/original', '.*\.js$'), (req, res) ->
       if err
         res.status(500).end err.toString()
       else
-        res.send code
+        res.set('Content-Type':'application/x-javascript','Cache-Control':'no-cache')
+        .send code
   else
     res.status(404).end('File not found')
 
@@ -136,5 +148,5 @@ app.get /\/.*/, (req, res) ->
     else
       res.status(404).send "nope, no #{fnm}"
 
-app.listen(9796)
+app.listen 9796
 console.log "Listening on port 9796"

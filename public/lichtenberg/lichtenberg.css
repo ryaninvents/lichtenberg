@@ -16,6 +16,7 @@
   background-color: #dcdcdc;
   min-width: 60px;
   font-size: 80%;
+  z-index: 0;
 }
 #lichtenberg td.coverage .covbar {
   width: attr(data-covered);
@@ -25,12 +26,13 @@
   left: 0;
   height:100%;
   content: "";
-  z-index: 1;
+  z-index: 0;
 }
 
 #lichtenberg tr[data-content="filename"]{
   cursor: pointer;
   border-radius: 4px;
+  z-index: -4;
 }
 
 #lichtenberg tr[data-content="filename"]:hover{
@@ -71,7 +73,7 @@
   padding: 2px 3px;
   margin-left: 8px;
 }
-
+/*
 #lichtenberg code.coverage:hover {
   background-color: hsla(208, 100%, 42%, 0.1);
 }
@@ -81,13 +83,17 @@
   border-bottom: 1px solid hsl(0, 0%, 60%);
   border-right: 1px solid hsl(0, 0%, 60%);
 }
-
+*/
 #lichtenberg code.coverage.passed {
   border-left: 3px solid hsl(147, 62%, 61%);
 }
 
 #lichtenberg code.coverage.failed {
   border-left: 3px solid hsl(0, 77%, 69%);
+}
+
+#lichtenberg code.coverage.display {
+  border-left: 3px solid hsl(200, 62%, 61%);
 }
 
 #lichtenberg tr.collapsed {

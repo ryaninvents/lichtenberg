@@ -8,28 +8,50 @@
   var Bacon = window.Bacon;
 
   var $results = $('#lichtenberg');
+  var traceStream = new Bacon.Bus(),
+    expectStream = new Bacon.Bus();
+
+  // If the `#lichtenberg` div is missing, just slap it on the page.
+  if($results.length===0){
+    $('body').append('<div id="lichtenberg"></div>');
+    $results = $('#lichtenberg');
+  }
+
+  var BUFFER_TIME = 500,
+    BUFFER_COUNT = 50;
+
+  traceStream.bufferWithTimeOrCount(BUFFER_TIME,BUFFER_COUNT).onValue(function(expr){
+    expr = expr.map(function(expr){expr.id = __lichtenberg_id;return expr});
+    io.emit('trace', expr);
+  });
+
+  expectStream.bufferWithTimeOrCount(BUFFER_TIME,BUFFER_COUNT).onValue(function(expr){
+    expr = expr.map(function(expr){expr.id = __lichtenberg_id;return expr});
+    io.emit('expect', expr);
+  });
 
   // Define our API.
   window.__Lichtenberg = {
 
     // `trace` gets called when a line of code runs.
     trace: function(expr){
-      expr.id = __lichtenberg_id;
-      io.emit('trace', expr);
+      traceStream.push(expr);
     },
 
     // `expect` gets called on file load, and tells Lichtenberg
     // which lines of code are expected to run.
     expect: function(expr){
-      expr.id = __lichtenberg_id;
-      io.emit('expect', expr);
+      expectStream.push(expr);
     },
 
     // `done` must be called from the user's script once it's done with
     // all its testing. Lichtenberg then goes through and verifies which
     // lines have run and which ones haven't, and outputs its report.
     done: function(){
-      io.emit('done', {id:__lichtenberg_id});
+      $results.html('<h3><i class="fa fa-spinner fa-spin"></i> Fetching coverage information...</h3>')
+      setTimeout(function(){
+        io.emit('done', {id:__lichtenberg_id});
+      }, BUFFER_TIME+20);
     }
   };
 
@@ -50,11 +72,6 @@
       res.filename = filename;
       return res;
     });
-    // If the `#lichtenberg` div is missing, just slap it on the page.
-    if($results.length===0){
-      $('body').append('<div id="lichtenberg"></div>');
-      $results = $('#lichtenberg');
-    }
     $results.html(tpl({results:_.values(files)}));
     $results.find('tr[data-content="filename"]').each(function(){
       var $filename = $(this),
@@ -125,7 +142,7 @@
           }
           function mkdiv(r) {
             var $d,
-              passedState = (r.executed? 'passed':'failed');
+              passedState = (r.executed===undefined?'display':r.executed? 'passed':'failed');
             $d = $("<code class='coverage "+passedState+"' title='"+getCaption(r)+"'></code>");
             if(r.children && r.children.sort) {
                 r.children.sort(function(a,b){
@@ -135,8 +152,7 @@
             _.forEach(r.children, function(child, i, list) {
               $d.append(mkdiv(child));
               if(i<list.length-1){
-                //$d.append('<pre>'+cleancode(code.substring(child.range[1],child.range[1]+5))+'</pre>')
-                $d.append('...');
+                $d.append('<pre>'+cleancode(code.slice(child.range[1],list[i+1].range[0]))+'</pre>')
               }
             });
             if(r.children && r.children.length && r.range){
