@@ -133,7 +133,7 @@ instrumentTree = (ast, opt=DEFAULT_OPTIONS) ->
       ins ast.body
       #ast.body.body = imap ast.body.body
       inst = getInstrumentation ast, opt
-      #ast.body.body.unshift inst
+      ast.body.body.unshift inst
       ast.instrumentation = [inst].concat ast.body.instrumentation
     when 'Identifier'
       ast.instrumentation = []
@@ -144,6 +144,11 @@ instrumentTree = (ast, opt=DEFAULT_OPTIONS) ->
       if ast.alternate
         instrumentTree ast.alternate, opt
         ast.instrumentation = ast.instrumentation.concat ast.alternate
+      out = if ast.instrumentation then _.filter (_.flatten [ast.instrumentation, ast]), _.identity else [ast]
+      console.log '====================================='
+      console.log out
+      console.log '>>', escodegen.generate ast
+      return {type:'BlockStatement',body:out, instrumentation: ast.instrumentation}
     when 'Literal'
       ast.instrumentation = []
     when 'LabeledStatement'
@@ -201,6 +206,11 @@ instrumentTree = (ast, opt=DEFAULT_OPTIONS) ->
     when 'VariableDeclaration'
       ast.declarations = imap ast.declarations
       ast.instrumentation = _.flatten ast.declarations.map (dec) -> dec.instrumentation
+      in1 = getInstrumentation ast
+      ast.instrumentation.push in1
+      out = [in1, ast]
+      out.instrumentation = ast.instrumentation
+      return out
     when 'VariableDeclarator'
       if ast.init
         ins ast.init
@@ -238,7 +248,6 @@ instrument = (code, opt=DEFAULT_OPTIONS) ->
   catch e
     ast.error = e.toString()
     console.error(e)
-    JSON.stringify ast, null, 2
     throw e
 
 module.exports = instrument
