@@ -4,6 +4,8 @@ fs = require 'fs'
 path = require 'path'
 _ = require 'lodash'
 
+console.log process.cwd()
+
 confPath = path.join process.cwd(), 'lichtenberg'
 config = if fs.existsSync("#{confPath}.json")
   require confPath
@@ -112,6 +114,21 @@ app.get new RegExp(path.join config.serveAs, '.*\.js$'), (req, res, next) ->
       if err then return res.status(500).send err.toString()
       res.set('Content-Type':'application/x-javascript','Cache-Control':'no-cache')
       .send instrument(filename:fnm1, code)
+  else
+    next()
+
+
+# Structure inspector for JS files.
+app.get new RegExp(path.join config.serveAs, '.*\.json$'), (req, res, next) ->
+  fnm1 = req.path.replace config.serveAs, ''
+  fnm = path.join process.cwd(), fnm1.replace(/json$/, 'js')
+  if config.exclude? and _.any(config.exclude, (x) -> fnm.match x)
+    return next()
+  if fs.existsSync fnm
+    fs.readFile fnm, (err, code) ->
+      if err then return res.status(500).send err.toString()
+      res.set('Content-Type':'application/x-javascript','Cache-Control':'no-cache')
+      .json esprima.parse code
   else
     next()
 

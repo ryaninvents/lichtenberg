@@ -42,7 +42,7 @@ module.exports = (opt={}, code) ->
       # ...then we go get each child node and instrument it by
       # calling `instrument` without any properties.
       opt.indent++
-      _.flatten(props).forEach (prop) =>
+      _.flatten(props).map (prop) =>
         instrumentor.instrument astNode[prop]
       opt.indent--
 
@@ -57,11 +57,15 @@ module.exports = (opt={}, code) ->
     unless f?
       #console.log JSON.stringify astNode, null, 2
       throw new Error("Unrecognized node type #{type}")
-    f.call(instrumentor, astNode)
+
+    newNode = f.call(instrumentor, astNode)
+    # if _.isArray(newNode) and not _.isArray(astNode)
+    #   console.log astNode.type, astNode.loc, newNode.length
+    newNode
 
   # Iterate an array and instrument each item.
   instrumentEach = (astNodes, props...) ->
-    #console.log "iEach (#{astNodes[0..3].map((n) -> n.type).join(',')}...)"
+    #console.log "iEach (#{astNodes[0...3].map((n) -> n.type).join(',')}#{if astNodes.length > 3 then " ...+#{astNodes.length-3} more" else ''})"
     opt.indent++
     # The result is flattened so we can do things like return
     # an array of nodes from our instrumentXYZ function to
@@ -86,12 +90,12 @@ module.exports = (opt={}, code) ->
       # ...call our automatically-defined function beforehand.
       instrumentor[funcName] = (node) ->
         childFunc[nodeType].apply @, arguments
-        originalFunc.apply(@, arguments) or node
+        originalFunc.apply(@, arguments) ? node
     else
       instrumentor[funcName] = childFunc[nodeType]
 
-  # #@instrument
-  #
+  # #instrument
+
   # Simply calls the appropriately named function to do two things:
   #
   # 1. Recurse down the tree and generate instrumentation for child nodes.
@@ -123,11 +127,17 @@ module.exports = (opt={}, code) ->
     props = _.flatten props
 
     astNode.instrumentation = (astNode.instrumentation ? []).concat _.flatten(props.filter (key) ->
-        astNode[key]?.instrumentation?.length
-      .map (key) -> astNode[key].instrumentation
+        _.isArray(astNode[key]) or astNode[key]?.instrumentation?.length
+      .map (key) ->
+        if _.isArray astNode[key]
+          instrumentor.collectInstrumentation astNode[key]
+        else
+          astNode[key].instrumentation
     )
 
     astNode
+
+  # #lichtCall
 
   # Create a call to `__Lichtenberg.trace()` or another `__Lichtenberg` method.
   instrumentor.lichtCall = (node, op={}) ->
@@ -164,6 +174,8 @@ module.exports = (opt={}, code) ->
       _.assign properties, attachments(node)
 
     properties.toString = -> JSON.stringify properties
+
+    # Generate a tree that `escodegen` can use.
     {
       type: 'ExpressionStatement'
       expression:
@@ -181,6 +193,8 @@ module.exports = (opt={}, code) ->
       _props: properties
     }
 
+  # #toBlock
+
   # Make a block statement out of an expression.
   instrumentor.toBlock = (expr) ->
     if expr.type is 'BlockStatement'
@@ -195,12 +209,15 @@ module.exports = (opt={}, code) ->
       body: [expr]
       instrumentation: expr.instrumentation
 
-  instrumentor.instrumentTree = (code) ->
+  # #instrumentCode
+
+  # Generate an instrumented version of the given code.
+  instrumentor.instrumentCode = (code) ->
     ast = esprima.parse code, opt
     ast = instrumentor.instrument ast
     escodegen.generate ast
 
   if code?
-    instrumentor.instrumentTree code
+    instrumentor.instrumentCode code
   else
     instrumentor

@@ -1,4 +1,4 @@
-getFunctionName = (f) -> f.id?.name or '«anonymous function»'
+getFunctionName = (f) -> f.id?.name or '(anonymous function)'
 
 module.exports = (opt) ->
   # Arrow function `x => x*x`
