@@ -26,6 +26,13 @@ module.exports = (opt) ->
   # TODO this should actually be instrumented
   instrumentEmptyStatement: (noop) -> noop
 
+  # Statement consisting of a single expression
+  instrumentExpressionStatement: (expr) ->
+    @instrument expr, 'expression'
+    if expr.instrumentation.length is 9
+      console.log expr.instrumentation
+    [@lichtCall(expr), expr]
+
   # Standard c-style for loop
   instrumentForStatement: (fLoop)->
     @instrument fLoop, 'init', 'test', 'update', 'body'
@@ -44,17 +51,14 @@ module.exports = (opt) ->
     @instrument lbl, 'label', 'body'
 
   # Full file.
-  # TODO inject collected instrumentation into the top as `expect` statements
+  # # TODO inject collected instrumentation into the top as `expect` statements
   instrumentProgram: (pgm) ->
     @instrument pgm, 'body'
-
-  # `return` keyword
-  # TODO needs instrumentation
-  instrumentReturnStatement: (ret) -> ret
-
-  # Full `switch(foo){...}` construct.
-  instrumentSwitchStatement: (sw) ->
-    @instrument sw, 'discriminant', 'cases'
+    console.log 'pgm Ins', pgm.instrumentation
+    expects = pgm.instrumentation.map (instrument) => @lichtCall instrument, func: 'expect'
+    pgm.body = expects
+    console.log expects
+    pgm
 
   # Particular case of a switch/case
   instrumentSwitchCase: (sCase) ->

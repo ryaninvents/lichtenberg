@@ -23,7 +23,7 @@ addLichtenberg = require './lib/modifyHTML'
 
 app.http().io()
 
-instrument = require './lib/instrument'
+instrument = require './lib/ast/instrument'
 
 # `bergs` keeps track of instances.
 bergs = {}
@@ -89,7 +89,7 @@ app.io.route 'trace', (req) ->
 
 app.io.route 'instrument', (req) ->
   code = req.data.code
-  req.io.emit 'instrument', code: instrument(code, req.data)
+  req.io.emit 'instrument', code: instrument(req.data, code)
 
 # If we go to the root, redirect to the test page.
 app.get '/', (req, res) -> res.redirect path.join config.serveAs, config.entry
@@ -110,7 +110,7 @@ app.get new RegExp(path.join config.serveAs, '.*\.js$'), (req, res, next) ->
     fs.readFile fnm, (err, code) ->
       if err then return res.status(500).send err.toString()
       res.set('Content-Type':'application/x-javascript','Cache-Control':'no-cache')
-      .send instrument(code, filename:fnm1)
+      .send instrument(filename:fnm1, code)
   else
     next()
 
