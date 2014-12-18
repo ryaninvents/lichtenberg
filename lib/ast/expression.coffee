@@ -8,3 +8,4 @@ module.exports = (opt) ->
 
   instrumentCallExpression: (expr) ->
     expr.instrumentation = _.flatten expr.arguments.map (node) -> node.instrumentation
+    expr

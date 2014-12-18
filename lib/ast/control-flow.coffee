@@ -16,6 +16,13 @@ module.exports = (opt) ->
 
   instrumentBlockStatement: (block) ->
     block.instrumentation = _.flatten block.body.map (node) -> node.instrumentation
+    block
+
+  instrumentIfStatement: (stmt) ->
+    if stmt.consequent? and stmt.consequent.type isnt 'BlockExpression'
+      stmt.consequent = @toBlock stmt.consequent
+    if stmt.alternate? and stmt.alternate.type isnt 'BlockExpression'
+      stmt.alternate = @toBlock stmt.alternate
 
   # Full file.
   instrumentProgram: (pgm) ->
@@ -23,19 +30,27 @@ module.exports = (opt) ->
       .map (node) -> node.instrumentation
     )
     expects = pgm.instrumentation.map (instrument) => @lichtCall instrument, func: 'expect'
-    # console.log expects
+    expects = expects.filter (line) -> line._props.range and line._props?.type in [
+        'ExpressionStatement'
+        'FunctionExpression'
+        'FunctionDeclaration'
+        'ArrowFunctionExpression'
+      ]
     expects = _.uniq expects, (x) -> "#{x._props?.range?[0]}:#{x._props?.range?[1]}"
-    expects = expects.sort (a, b) ->
-      if a._props.range[0] < b._props.range[0]
-        -1
-      else if a._props.range[0] > b._props.range[0]
-        1
-      else if a._props.range[1] < b._props.range[1]
-        1
-      else if a._props.range[1] > b._props.range[1]
-        -1
-      else
-        0
-    pgm.body = expects.concat pgm.body
-    #console.log expects
+    try
+      expects = expects.sort (a, b) ->
+        if a._props.range[0] < b._props.range[0]
+          -1
+        else if a._props.range[0] > b._props.range[0]
+          1
+        else if a._props.range[1] < b._props.range[1]
+          1
+        else if a._props.range[1] > b._props.range[1]
+          -1
+        else
+          0
+    catch e
+      # console.log expects
+      throw e
+    pgm.body = _.flatten expects.concat pgm.body
     pgm

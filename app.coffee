@@ -104,16 +104,30 @@ app.get path.join(config.serveAs,config.entry), (req, res) ->
     res.send html
 
 # Serve any JS files that the tests depend on, instrumenting as needed.
-app.get new RegExp(path.join config.serveAs, '.*\.js$'), (req, res, next) ->
+app.get new RegExp(path.join config.serveAs, '.*\.js(\.map)?$'), (req, res, next) ->
   fnm1 = req.path.replace config.serveAs, ''
+  isMap = fnm1.match /\.map$/
+  fnm1 = fnm1.replace /\.map$/, ''
+  fnShort = fnm1
   fnm = path.join process.cwd(), fnm1
   if config.exclude? and _.any(config.exclude, (x) -> fnm.match x)
     return next()
   if fs.existsSync fnm
     fs.readFile fnm, (err, code) ->
       if err then return res.status(500).send err.toString()
+      console.log "fnm1 #{fnm1}"
       res.set('Content-Type':'application/x-javascript','Cache-Control':'no-cache')
-      .send instrument(filename:fnm1, code)
+      .send (->
+          x = instrument(filename: fnm1, fnShort: fnShort, code)
+          if isMap and x.map?
+            x.map.toString()
+          else
+            """
+            #{x.code}
+            //# sourceMappingURL=#{path.join config.serveAs, fnm1}.map
+            """
+            x.code
+        )()
   else
     next()
 
