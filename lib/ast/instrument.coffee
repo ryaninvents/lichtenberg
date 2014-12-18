@@ -5,13 +5,13 @@ children = require './children'
 esprima = require 'esprima'
 escodegen = require 'escodegen'
 _ = require 'lodash'
+path = require 'path'
 
 childFunc = _.mapValues children, (childProps) ->
   # If this type can have child nodes (i.e. `childProps.length !== 0`),
   # create a function that will recurse down into them.
   if childProps.length
-    (node) ->
-      @instrument node, childProps
+    (node) -> @instrument node, childProps
   # Otherwise, just pass the node through untouched. This happens with
   # Literals and Identifiers.
   else
@@ -42,8 +42,16 @@ module.exports = (opt={}, code) ->
       # ...then we go get each child node and instrument it by
       # calling `instrument` without any properties.
       opt.indent++
-      _.flatten(props).map (prop) =>
-        instrumentor.instrument astNode[prop]
+      props = _.flatten props
+      _.flatten(props).forEach (prop) =>
+        astNode[prop] = instrumentor.instrument astNode[prop]
+        if _.isArray astNode[prop]
+          # console.log 'has an array child', astNode
+          l1 = astNode[prop].length
+          astNode[prop] = _.flatten astNode[prop]
+          # if l1 isnt astNode[prop].length
+          #   console.log 'problem child'
+
       opt.indent--
 
       return astNode
@@ -55,7 +63,7 @@ module.exports = (opt={}, code) ->
     f = instrumentor["instrument#{type}"]
 
     unless f?
-      #console.log JSON.stringify astNode, null, 2
+      # console.log JSON.stringify astNode, null, 2
       throw new Error("Unrecognized node type #{type}")
 
     newNode = f.call(instrumentor, astNode)
@@ -195,18 +203,21 @@ module.exports = (opt={}, code) ->
 
   # #toBlock
 
-  # Make a block statement out of an expression.
+  # Make a block statement out of a statement.
   instrumentor.toBlock = (expr) ->
     if expr.type is 'BlockStatement'
       expr
-    else if expr.type.match /Expression$|.*Function.*/
+    else if expr.type?.match /Statement$|Expression$|Literal|Identifier/
+      # don't modify
+      expr
+    else if expr.type?.match /Function/
       @toBlock
         type: 'ExpressionStatement'
         expression: expr
         instrumentation: expr.instrumentation
     else
       type: 'BlockStatement'
-      body: [expr]
+      body: _.flatten [expr]
       instrumentation: expr.instrumentation
 
   # #instrumentCode
@@ -215,7 +226,16 @@ module.exports = (opt={}, code) ->
   instrumentor.instrumentCode = (code) ->
     ast = esprima.parse code, opt
     ast = instrumentor.instrument ast
-    escodegen.generate ast
+    try
+      m = opt.fnShort.match /^(.*)\/([^/]+)$/
+      fnm = opt.fnShort
+      fPath = '/lichtenberg/original'
+      if m.length > 1
+        fnm = m[2]
+        fPath = path.join '/lichtenberg/original', m[1]
+      escodegen.generate ast, sourceMap: path.join(fPath,fnm), sourceRoot: fPath, sourceMapWithCode: yes, sourceContent: code
+    catch e
+      throw e
 
   if code?
     instrumentor.instrumentCode code
