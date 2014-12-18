@@ -81,6 +81,7 @@ traceItem = (data) ->
   unless bergs[id].files[fnm].lines[range]?
     row = bergs[id].files[fnm].lines[range] = req.data
     row.executed = 0
+    row.unexpected = yes
   row = bergs[id].files[fnm].lines[range]
   row.executed++
 
@@ -115,7 +116,7 @@ app.get new RegExp(path.join config.serveAs, '.*\.js$'), (req, res, next) ->
     next()
 
 app.get new RegExp(path.join '/lichtenberg/original', '.*\.js$'), (req, res) ->
-  fnm1 = req.path.replace '/lichtenberg/original', ''
+  fnm1 = req.path.replace /\/lichtenberg\/original\/?/, ''
   fnm = path.join process.cwd(), fnm1
   if fs.existsSync fnm
     fs.readFile fnm, (err, code) ->

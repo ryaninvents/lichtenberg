@@ -81,7 +81,7 @@
         $codeCell = $codeRow.find('td');
       $filename.click(function(){
         $codeRow.toggleClass('collapsed');
-        $.get('/lichtenberg/original'+fnm)
+        $.get('/lichtenberg/original'+fnm.replace(/^([^/])/, "/$1"))
         .then(function(code){
           var
             nest = {children:[],range:[0, code.length],loc:{start:{line:'begin'},end:{line:'end'}}};
@@ -142,7 +142,7 @@
           }
           function mkdiv(r) {
             var $d,
-              passedState = (r.executed===undefined?'display':r.executed? 'passed':'failed');
+              passedState = (r.executed===undefined?'display':r.unexpected? 'unexpected' : r.executed? 'passed':'failed');
             $d = $("<code class='coverage "+passedState+"' title='"+getCaption(r)+"'></code>");
             if(r.children && r.children.sort) {
                 r.children.sort(function(a,b){

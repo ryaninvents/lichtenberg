@@ -4,7 +4,6 @@ module.exports = (opt) ->
   # Arrow function `x => x*x`
   instrumentArrowFunctionExpression: (func) ->
     func.body = @toBlock func.body
-    func = @instrument func, 'params', 'defaults', 'body', 'rest'
     func.body.body.unshift @lichtCall func, name: getFunctionName
     func.instrumentation.push func
     func
@@ -12,15 +11,15 @@ module.exports = (opt) ->
   # Function declaration `function foo(){}`
   instrumentFunctionDeclaration: (func) ->
     func.body = @toBlock func.body
-    i = @instrument func, 'id', 'params', 'defaults', 'body', 'rest'
     func.body.body.unshift @lichtCall func, name: getFunctionName
     func.instrumentation.push func
+    # console.log 'fd', func.instrumentation.length
     func
 
   # Function expression `function(){}`
   instrumentFunctionExpression: (func) ->
     func.body = @toBlock func.body
-    @instrument func, 'id', 'params', 'defaults', 'body', 'rest'
     func.body.body.unshift @lichtCall func, name: getFunctionName
     func.instrumentation.push func
+    # console.log 'fe', func.instrumentation.length
     func

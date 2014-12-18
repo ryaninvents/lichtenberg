@@ -6,6 +6,17 @@ esprima = require 'esprima'
 escodegen = require 'escodegen'
 _ = require 'lodash'
 
+childFunc = _.mapValues children, (childProps) ->
+  # If this type can have child nodes (i.e. `childProps.length !== 0`),
+  # create a function that will recurse down into them.
+  if childProps.length
+    (node) ->
+      @instrument node, childProps
+  # Otherwise, just pass the node through untouched. This happens with
+  # Literals and Identifiers.
+  else
+    (node) -> node
+
 DEFAULT_OPTIONS =
   functionCoverage: yes
   statementCoverage: yes
@@ -24,8 +35,6 @@ module.exports = (opt={}, code) ->
   # Finds and executes the appropriate function to instrument
   # each child node.
   generateInstrumentation = (astNode, props...) ->
-    if opt.debug and not props?
-      console.log "#{spaces opt.indent}-#{astNode.type}"
 
     # If we've passed in properties to iterate over...
     if props? and props.length
@@ -70,19 +79,16 @@ module.exports = (opt={}, code) ->
   # our current node may have and recurse down into them.
   _.forOwn children, (childProps, nodeType) ->
     funcName = "instrument#{nodeType}"
+    originalFunc = instrumentor[funcName]
 
-    # If we've already defined special behavior, don't overwrite.
-    return if instrumentor[funcName]
-
-    # If this type can have child nodes (i.e. `childProps.length !== 0`),
-    # create a function that will recurse down into them.
-    instrumentor[funcName] = if childProps.length
-      (node) ->
-        @instrument node, childProps
-    # Otherwise, just pass the node through untouched. This happens with
-    # Literals and Identifiers.
+    # If we've defined special behavior...
+    if originalFunc?
+      # ...call our automatically-defined function beforehand.
+      instrumentor[funcName] = (node) ->
+        childFunc[nodeType].apply @, arguments
+        originalFunc.apply(@, arguments) or node
     else
-      (node) -> node
+      instrumentor[funcName] = childFunc[nodeType]
 
   # #@instrument
   #
@@ -91,12 +97,12 @@ module.exports = (opt={}, code) ->
   # 1. Recurse down the tree and generate instrumentation for child nodes.
   # 2. Attach the instrumentation to the node and return it.
   instrumentor.instrument = (astNode, props...) ->
-    return unless astNode
+    return unless astNode?
     astNode.instrumentation ?= []
     if _.isArray astNode
-      instrumentEach.apply instrumentor, arguments
+      astNode = instrumentEach.apply instrumentor, arguments
     else
-      generateInstrumentation.apply instrumentor, arguments
+      astNode = generateInstrumentation.apply instrumentor, arguments
     instrumentor.collectInstrumentation.apply instrumentor, [astNode].concat props
     astNode
 
@@ -107,45 +113,49 @@ module.exports = (opt={}, code) ->
     if _.isArray astNode
       astNode.instrumentation = _.flatten astNode.map (node) =>
         instrumentor.collectInstrumentation.call instrumentor, node, _.flatten props
+        node.instrumentation
       return astNode
-    if props? and props.length
-      # Dirty hack in case we called as `collectInstrumentation(node, [prop, prop2])`
-      props = _.flatten props
 
-      astNode.instrumentation = astNode.instrumentation.concat _.flatten(props.filter (key) ->
-          astNode[key]?.instrumentation?.length
-        .map (key) -> astNode[key].instrumentation
-      )
+    unless props?.length
+      props = children[astNode.type]
+
+    # Dirty hack in case we called as `collectInstrumentation(node, [prop, prop2])`
+    props = _.flatten props
+
+    astNode.instrumentation = (astNode.instrumentation ? []).concat _.flatten(props.filter (key) ->
+        astNode[key]?.instrumentation?.length
+      .map (key) -> astNode[key].instrumentation
+    )
 
     astNode
 
   # Create a call to `__Lichtenberg.trace()` or another `__Lichtenberg` method.
-  instrumentor.lichtCall = (node, opt={}) ->
+  instrumentor.lichtCall = (node, op={}) ->
 
     # Allow for passing in of another function name, but by
     # default call `trace()`.
-    lichFunc = opt?.func or 'trace'
+    lichFunc = op?.func or 'trace'
 
     # Properties to add into the function call. You can overwrite them
     # but I don't think there's a reason to. I'll probably remove this
     # overwrite ability later on, so don't depend on it.
-    properties = opt.properties or
+    properties = op.properties or
       loc: node.loc
       range: node.range
       type: node.type
-      filename: node.filename
+      filename: node.filename or op.filename or opt.filename
 
     # If we've provided a `name` function...
-    if _.isFunction opt.name
+    if _.isFunction op.name
 
       # ...use that function to get the name of our node.
       # Useful to instrument named functions.
-      properties.name = opt.name(node)
+      properties.name = op.name(node)
 
     # Allow attachment of custom properties.
     # Circular references are not allowed here.
-    if opt.attach?
-      attachments = opt.attach
+    if op.attach?
+      attachments = op.attach
 
       # `attach` can be either a function or a constant.
       unless _.isFunction attach
@@ -179,9 +189,11 @@ module.exports = (opt={}, code) ->
       @toBlock
         type: 'ExpressionStatement'
         expression: expr
+        instrumentation: expr.instrumentation
     else
       type: 'BlockStatement'
       body: [expr]
+      instrumentation: expr.instrumentation
 
   instrumentor.instrumentTree = (code) ->
     ast = esprima.parse code, opt
