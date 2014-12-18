@@ -11,8 +11,8 @@ module.exports = (opt) ->
   # Statement consisting of a single expression
   instrumentExpressionStatement: (expr) ->
     expr.instrumentation.push expr
-    [@lichtCall(expr), expr]
-    expr
+    [@lichtCall(expr, name: 'statement'), expr]
+    #@lichtCall expr, name: 'statement'
 
   instrumentBlockStatement: (block) ->
     block.instrumentation = _.flatten block.body.map (node) -> node.instrumentation

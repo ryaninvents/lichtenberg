@@ -115,7 +115,7 @@
           function getCaption(r){
             var type, lines;
             if(!r.type){
-              type = '¯\\_(ツ)_/¯';
+              type = 'Program';
             } else {
               type = r.type.replace(/([A-Z][a-z]+)(.*)/, function($0, $1, $2){
                 return $1 + ' ' + $2.toLowerCase();
