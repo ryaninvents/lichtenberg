@@ -6,6 +6,7 @@ module.exports = (opt) ->
     func.body = @toBlock func.body
     func = @instrument func, 'params', 'defaults', 'body', 'rest'
     func.body.body.unshift @lichtCall func, name: getFunctionName
+    func.instrumentation.push func
     func
 
   # Function declaration `function foo(){}`
@@ -13,6 +14,7 @@ module.exports = (opt) ->
     func.body = @toBlock func.body
     i = @instrument func, 'id', 'params', 'defaults', 'body', 'rest'
     func.body.body.unshift @lichtCall func, name: getFunctionName
+    func.instrumentation.push func
     func
 
   # Function expression `function(){}`
@@ -20,4 +22,5 @@ module.exports = (opt) ->
     func.body = @toBlock func.body
     @instrument func, 'id', 'params', 'defaults', 'body', 'rest'
     func.body.body.unshift @lichtCall func, name: getFunctionName
+    func.instrumentation.push func
     func
