@@ -1,5 +1,5 @@
 {
   "entry": "test.html",
   "include": ["assets"],
-  "exclude": ["bower_components"]
+  "exclude": ["bower_components","test-suite"]
 }

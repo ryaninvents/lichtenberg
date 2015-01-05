@@ -23,13 +23,15 @@ DEFAULT_OPTIONS =
   branchCoverage: no
   conditionCoverage: no
 
+# Generate a string with the given number of spaces so
+# we can indent the debug output.
 spaces = (n) -> [1...n].map(-> ' ').join('')
 
 module.exports = (opt={}, code) ->
+# Clean up the options object and add defaults.
   opt = _.clone opt
   opt.loc = opt.range = yes
   opt.indent = 0
-  opt.debug = yes
   _.defaults opt, DEFAULT_OPTIONS
 
   # Finds and executes the appropriate function to instrument
@@ -42,15 +44,18 @@ module.exports = (opt={}, code) ->
       # ...then we go get each child node and instrument it by
       # calling `instrument` without any properties.
       opt.indent++
-      props = _.flatten props
+
+# Flatten so we can either call this function with `(node, prop, prop)`
+# or `(node, [prop, prop])`.
       _.flatten(props).forEach (prop) =>
         astNode[prop] = instrumentor.instrument astNode[prop]
+
+# If any of our instrumentation functions has returned an array, we want
+# to make sure that array gets flattened out. This enables us to, for
+# instance, return `[instrumentation, originalStatement]` in place of a
+# given statement `originalStatement`.
         if _.isArray astNode[prop]
-          # console.log 'has an array child', astNode
-          l1 = astNode[prop].length
           astNode[prop] = _.flatten astNode[prop]
-          # if l1 isnt astNode[prop].length
-          #   console.log 'problem child'
 
       opt.indent--
 
@@ -63,12 +68,9 @@ module.exports = (opt={}, code) ->
     f = instrumentor["instrument#{type}"]
 
     unless f?
-      # console.log JSON.stringify astNode, null, 2
       throw new Error("Unrecognized node type #{type}")
 
     newNode = f.call(instrumentor, astNode)
-    # if _.isArray(newNode) and not _.isArray(astNode)
-    #   console.log astNode.type, astNode.loc, newNode.length
     newNode
 
   # Iterate an array and instrument each item.
@@ -233,11 +235,14 @@ module.exports = (opt={}, code) ->
       if m.length > 1
         fnm = m[2]
         fPath = path.join '/lichtenberg/original', m[1]
+# Source maps aren't working yet and I'm not sure why.
       escodegen.generate ast, sourceMap: path.join(fPath,fnm), sourceRoot: fPath, sourceMapWithCode: yes, sourceContent: code
     catch e
       throw e
 
+# If we've passed in code with our opts, instrument the code.
   if code?
     instrumentor.instrumentCode code
+# Otherwise, return a function we can reuse over and over.
   else
     instrumentor

@@ -20,9 +20,13 @@ module.exports = (opt) ->
 
   instrumentIfStatement: (stmt) ->
     if stmt.consequent? and stmt.consequent.type isnt 'BlockExpression'
-      stmt.consequent = @toBlock stmt.consequent
+      stmt.consequent = @instrument @toBlock stmt.consequent
     if stmt.alternate? and stmt.alternate.type isnt 'BlockExpression'
-      stmt.alternate = @toBlock stmt.alternate
+      stmt.alternate = @instrument @toBlock stmt.alternate
+    stmt
+
+  instrumentReturnStatement: (stmt) ->
+    @instrumentExpressionStatement.apply @, arguments
 
   # Full file.
   instrumentProgram: (pgm) ->
