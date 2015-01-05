@@ -54,3 +54,27 @@ Test = {
     }
   }
 };
+
+function TestFoo(){
+  var x = 0;
+  for(;x<10;x++){
+    var y = x;
+    if(y===8){
+      return y*x;
+    }
+  }
+}
+
+var TestBar = function(){
+  var x = 0;
+  for(;x<10;x++){
+    var y = x;
+    if(y===8){
+      return y*x;
+    }
+  }
+}
+
+var x = 7;
+var y = x+2;
+TestBar();

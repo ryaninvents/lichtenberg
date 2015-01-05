@@ -125,8 +125,8 @@ app.get new RegExp(path.join config.serveAs, '.*\.js(\.map)?$'), (req, res, next
             """
             #{x.code}
             //# sourceMappingURL=#{path.join config.serveAs, fnm1}.map
+            //# sourceURL=#{path.join '/lichtenberg/original', config.serveAs.replace(/^\//, ''), fnm1}
             """
-            x.code
         )()
   else
     next()

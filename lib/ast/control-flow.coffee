@@ -12,11 +12,6 @@ module.exports = (opt) ->
   instrumentExpressionStatement: (expr) ->
     expr.instrumentation.push expr
     [@lichtCall(expr, name: 'statement'), expr]
-    #@lichtCall expr, name: 'statement'
-
-  instrumentBlockStatement: (block) ->
-    block.instrumentation = _.flatten block.body.map (node) -> node.instrumentation
-    block
 
   instrumentIfStatement: (stmt) ->
     if stmt.consequent? and stmt.consequent.type isnt 'BlockExpression'
@@ -28,18 +23,16 @@ module.exports = (opt) ->
   instrumentReturnStatement: (stmt) ->
     @instrumentExpressionStatement.apply @, arguments
 
+  instrumentVariableDeclaration: (stmt) ->
+    @instrumentExpressionStatement.apply @, arguments
+
   # Full file.
   instrumentProgram: (pgm) ->
     pgm.instrumentation = _.flatten(pgm.body.filter (node) -> node.instrumentation?.length
       .map (node) -> node.instrumentation
     )
     expects = pgm.instrumentation.map (instrument) => @lichtCall instrument, func: 'expect'
-    expects = expects.filter (line) -> line._props.range and line._props?.type in [
-        'ExpressionStatement'
-        'FunctionExpression'
-        'FunctionDeclaration'
-        'ArrowFunctionExpression'
-      ]
+    expects = expects.filter (line) -> line._props.range and ((line._props?.type?.match /Function|(Statement|Declaration)$/))
     expects = _.uniq expects, (x) -> "#{x._props?.range?[0]}:#{x._props?.range?[1]}"
     try
       expects = expects.sort (a, b) ->
@@ -54,7 +47,6 @@ module.exports = (opt) ->
         else
           0
     catch e
-      # console.log expects
       throw e
-    pgm.body = _.flatten expects.concat pgm.body
+    pgm.body = _.flatten(expects.concat(pgm.body))
     pgm

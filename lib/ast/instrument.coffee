@@ -1,3 +1,8 @@
+# # instrument.coffee
+#
+# Main file for instrumenting JS code.
+
+# Split method definitions between multiple files for ease of editing.
 methodDefs = ['./control-flow', './expression', './function'].map require
 
 children = require './children'
@@ -7,6 +12,8 @@ escodegen = require 'escodegen'
 _ = require 'lodash'
 path = require 'path'
 
+# Create a hash with a key for each AST node type and where each value is a function
+# that will recurse into any child AST nodes.
 childFunc = _.mapValues children, (childProps) ->
   # If this type can have child nodes (i.e. `childProps.length !== 0`),
   # create a function that will recurse down into them.
@@ -33,6 +40,8 @@ module.exports = (opt={}, code) ->
   opt.loc = opt.range = yes
   opt.indent = 0
   _.defaults opt, DEFAULT_OPTIONS
+
+# ## generateInstrumentation()
 
   # Finds and executes the appropriate function to instrument
   # each child node.
@@ -73,9 +82,11 @@ module.exports = (opt={}, code) ->
     newNode = f.call(instrumentor, astNode)
     newNode
 
+  # ## instrumentEach()
+
   # Iterate an array and instrument each item.
   instrumentEach = (astNodes, props...) ->
-    #console.log "iEach (#{astNodes[0...3].map((n) -> n.type).join(',')}#{if astNodes.length > 3 then " ...+#{astNodes.length-3} more" else ''})"
+
     opt.indent++
     # The result is flattened so we can do things like return
     # an array of nodes from our instrumentXYZ function to
@@ -104,7 +115,7 @@ module.exports = (opt={}, code) ->
     else
       instrumentor[funcName] = childFunc[nodeType]
 
-  # #instrument
+  # ## instrument()
 
   # Simply calls the appropriately named function to do two things:
   #
@@ -121,13 +132,18 @@ module.exports = (opt={}, code) ->
     astNode
 
 
+  # ## collectInstrumentation()
+
   # Skim the instrumentation from all child nodes and attach it to the given
   # AST node to keep track of it.
   instrumentor.collectInstrumentation = (astNode, props...) ->
+
     if _.isArray astNode
-      astNode.instrumentation = _.flatten astNode.map (node) =>
+
+      astNode.instrumentation = (astNode.instrumentation ? []).concat _.flatten astNode.map (node) =>
         instrumentor.collectInstrumentation.call instrumentor, node, _.flatten props
         node.instrumentation
+
       return astNode
 
     unless props?.length
@@ -147,7 +163,7 @@ module.exports = (opt={}, code) ->
 
     astNode
 
-  # #lichtCall
+  # ## lichtCall()
 
   # Create a call to `__Lichtenberg.trace()` or another `__Lichtenberg` method.
   instrumentor.lichtCall = (node, op={}) ->
@@ -203,26 +219,35 @@ module.exports = (opt={}, code) ->
       _props: properties
     }
 
-  # #toBlock
+  # ## toBlock()
 
-  # Make a block statement out of a statement.
+  # Make a block statement out of an AST node.
   instrumentor.toBlock = (expr) ->
     if expr.type is 'BlockStatement'
       expr
+# If it *really shouldn't* be a block, then don't do anything for the time being.
+#
+# TODO: in the future, wrap these in a self-evaluating anonymous function so we can
+# attach instrumentation inside if we like.
+#
+# TODO: check why I chose this regex; it may not be the right choice.
     else if expr.type?.match /Statement$|Expression$|Literal|Identifier/
-      # don't modify
       expr
+# If it's some sort of function, wrap it in an ExpressionStatement and pass it through.
+#
+# TODO: check this logic; I'm not entirely sure it's valid here.
     else if expr.type?.match /Function/
       @toBlock
         type: 'ExpressionStatement'
         expression: expr
         instrumentation: expr.instrumentation
+# If we haven't caught anything else then just wrap it. (?)
     else
       type: 'BlockStatement'
       body: _.flatten [expr]
-      instrumentation: expr.instrumentation
+      instrumentation: expr.instrumentation ? _.flatten [expr].map (e) -> e.instrumentation
 
-  # #instrumentCode
+  # ## instrumentCode()
 
   # Generate an instrumented version of the given code.
   instrumentor.instrumentCode = (code) ->
@@ -236,7 +261,11 @@ module.exports = (opt={}, code) ->
         fnm = m[2]
         fPath = path.join '/lichtenberg/original', m[1]
 # Source maps aren't working yet and I'm not sure why.
-      escodegen.generate ast, sourceMap: path.join(fPath,fnm), sourceRoot: fPath, sourceMapWithCode: yes, sourceContent: code
+      escodegen.generate ast,
+        sourceMap: path.join(fPath,fnm)
+        sourceRoot: fPath
+        sourceMapWithCode: yes
+        sourceContent: code
     catch e
       throw e
 
