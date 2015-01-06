@@ -36,16 +36,18 @@ module.exports = (opt) ->
     expects = _.uniq expects, (x) -> "#{x._props?.range?[0]}:#{x._props?.range?[1]}"
     try
       expects = expects.sort (a, b) ->
-        if a._props.range[0] < b._props.range[0]
-          -1
-        else if a._props.range[0] > b._props.range[0]
-          1
-        else if a._props.range[1] < b._props.range[1]
-          1
-        else if a._props.range[1] > b._props.range[1]
-          -1
-        else
-          0
+        [a, b] = [a._props.range, b._props.range]
+        switch
+          when a[0] < b[0]
+            -1
+          when a[0] > b[0]
+            1
+          when a[1] < b[1]
+            1
+          when a[1] > b[1]
+            -1
+          else
+            0
     catch e
       throw e
     pgm.body = _.flatten(expects.concat(pgm.body))

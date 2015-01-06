@@ -14,11 +14,13 @@ path = require 'path'
 
 # Create a hash with a key for each AST node type and where each value is a function
 # that will recurse into any child AST nodes.
-childFunc = _.mapValues children, (childProps) ->
+recurseChildren = _.mapValues children, (childProps) ->
   # If this type can have child nodes (i.e. `childProps.length !== 0`),
   # create a function that will recurse down into them.
   if childProps.length
-    (node) -> @instrument node, childProps
+    (node) ->
+      @instrument node, childProps
+      @collectInstrumentation node, childProps
   # Otherwise, just pass the node through untouched. This happens with
   # Literals and Identifiers.
   else
@@ -104,16 +106,16 @@ module.exports = (opt={}, code) ->
   # our current node may have and recurse down into them.
   _.forOwn children, (childProps, nodeType) ->
     funcName = "instrument#{nodeType}"
-    originalFunc = instrumentor[funcName]
+    specialBehavior = instrumentor[funcName]
 
     # If we've defined special behavior...
-    if originalFunc?
-      # ...call our automatically-defined function beforehand.
+    if specialBehavior?
+      # ...call our automatically-defined function, then our special behavior.
       instrumentor[funcName] = (node) ->
-        childFunc[nodeType].apply @, arguments
-        originalFunc.apply(@, arguments) ? node
+        recurseChildren[nodeType].apply @, arguments
+        specialBehavior.apply(@, arguments) ? node
     else
-      instrumentor[funcName] = childFunc[nodeType]
+      instrumentor[funcName] = recurseChildren[nodeType]
 
   # ## instrument()
 
@@ -128,7 +130,6 @@ module.exports = (opt={}, code) ->
       astNode = instrumentEach.apply instrumentor, arguments
     else
       astNode = generateInstrumentation.apply instrumentor, arguments
-    instrumentor.collectInstrumentation.apply instrumentor, [astNode].concat props
     astNode
 
 
