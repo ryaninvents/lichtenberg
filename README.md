@@ -20,7 +20,7 @@ Lichtenberg aims to be as independent as possible of whatever testing framework 
     $ npm install -g lichtenberg
 
 ## Trying it out
-You can try Lichtenberg with the sample `test` folder included in this repository. Requires [Grunt](http://gruntjs.com/).
+You can try Lichtenberg with the tests included in this repository. Requires [Grunt](http://gruntjs.com/).
 
 ```
 $ git clone https://github.com/baconscript/lichtenberg.git
@@ -30,7 +30,7 @@ $ cd test
 $ lichtenberg
 ```
 
-Try adding more tests in `test.html` and watching the coverage go up! The library being tested is [format](https://github.com/samsonjs/format).
+The tests are meant to exercise every feature of JavaScript to make sure that Lichtenberg works correctly.
 
 ## Setup
 
