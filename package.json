@@ -1,0 +1,26 @@
+{
+  "name": "lichtenberg",
+  "version": "1.0.0",
+  "description": "JavaScript code coverage and tracing.",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "engines": {
+    "node": ">=0.12.0",
+    "iojs": ">=2.1.0"
+  },
+  "author": "Ryan Muller <ryan@muller.io>",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "cheerio": "^0.19.0",
+    "fondue": "^0.6.1",
+    "isstream": "^0.1.2",
+    "koa": "^0.21.0",
+    "koa-static": "^1.4.9",
+    "lodash": "^3.9.3",
+    "minimatch": "^2.0.8",
+    "stream-to-buffer": "^0.1.0",
+    "thunkify-wrap": "^1.0.4"
+  }
+}
