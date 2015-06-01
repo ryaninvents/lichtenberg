@@ -1,0 +1,7 @@
+#!/usr/bin/env node --harmony
+
+const app = (require('../server'))();
+const _ = require('lodash');
+const http = require('http');
+
+http.createServer(app.callback()).listen(process.env.PORT || 3000);
